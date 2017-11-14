@@ -2,3 +2,4 @@
 Simple code to generate
 - RMT and RPA
 - calculate RPA for each sample if there are duolicates 
+- QC check for each run 
