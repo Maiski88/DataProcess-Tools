@@ -19,62 +19,28 @@ setwd("/home/maiski/R/IBD")
 list.files()
 
 ### introduce data into the R environment 
-pos1_10 <- read.csv("IBD_extracted_1-10_pos.csv")
+pos1_10 <- read.csv("IBD_T_pool_pos_extracted_171110.csv")
 
 #Check data structure 
 summary(pos1_10)
 head(pos1_10)
 class(pos1_10)
 
-# Clean up the data frame to remove unnecessary stuff (eg. "RT", "SNR")
-pos1_10clean <- pos1_10[!grepl("RT", pos1_10[,3]),]
-
-# Subset the data frame 
-samplelabels <- pos1_10clean[, 1:2] ### need to be merged later with RMT and RPA matrix
-ISmatrix <- pos1_10clean[, 3:4]  ### contain two columns; IS RT and IS peak area
-analytes <- pos1_10clean[, 6:176] ### rest of the initial data frame, include SNR as well 
-
-# number of compounds included in the matrix 
-cmpds <- length(colnames(analytes))/3
-
-# loop to calculate the RMT and RPA 
-x = 1
-y = 2
-RMT <- data.frame(matrix(nrow = length(rownames(pos1_10clean)), ncol = cmpds))
-RPA <- data.frame(matrix(nrow = length(rownames(pos1_10clean)), ncol = cmpds))
-for (i in 1:cmpds) {
-  RMT[, i] <- as.numeric(levels(analytes[, x]))[analytes[, x]] / as.numeric(levels(ISmatrix[, 1]))[ISmatrix[, 1]]
-  RPA[, i] <- as.numeric(levels(analytes[, y]))[analytes[, y]] / as.numeric(levels(ISmatrix[, 2]))[ISmatrix[, 2]]
-  colnames(RMT)[i] <- colnames(analytes)[x]
-  colnames(RPA)[i] <- colnames(analytes)[x]
-  x = x + 3
-  y = y + 3 
-}
-
-RMTtotal <- cbind(samplelabels, RMT)
-RPAtotal <- cbind(samplelabels, RPA)
-output <- "IBD1-10_pos"
-write.csv(RMTtotal, file = paste(output, "RMT.csv"))
-
-test <- as.numeric(analytes[1, 1]) / as.numeric(ISmatrix[1, 1])
-as.numeric(analytes[1, 1])
-m <- as.numeric(levels(analytes[1, 1]))[analytes[1, 1]]
-
-
-
 ############*************FUNCTION*******************######################
 # Function to generate RMT and RPA matrices 
 relativematrix <- function(inputmatrix, outputname) {
+  # Clean up the data frame to remove unnecessary stuff (eg. "RT", "SNR")
   cleanmatrix <- inputmatrix[!grepl("RT", inputmatrix[,3]),]
-  samplelabels <- cleanmatrix[, 1:2]
+  samplelabels <- cleanmatrix[, 1:2] # Subset the data frame 
   ISmatrix <- cleanmatrix[, 3:4]
   analytes <- cleanmatrix[, 6:length(colnames(cleanmatrix))]
-  cmpds <- length(colnames(analytes))/3
+  cmpds <- length(colnames(analytes))/3 #number of compounds included in the matrix 
   x = 1
   y = 2
+  ## Create empty data frames to input RMT & RPA calculation results 
   RMT <- data.frame(matrix(nrow = length(rownames(cleanmatrix)), ncol = cmpds))
   RPA <- data.frame(matrix(nrow = length(rownames(cleanmatrix)), ncol = cmpds))
-  for (i in 1:cmpds) {
+  for (i in 1:cmpds) { # loop to calculate the RMT and RPA 
     RMT[, i] <- as.numeric(levels(analytes[, x]))[analytes[, x]] / as.numeric(levels(ISmatrix[, 1]))[ISmatrix[, 1]]
     RPA[, i] <- as.numeric(levels(analytes[, y]))[analytes[, y]] / as.numeric(levels(ISmatrix[, 2]))[ISmatrix[, 2]]
     colnames(RMT)[i] <- colnames(analytes)[x]
@@ -82,8 +48,10 @@ relativematrix <- function(inputmatrix, outputname) {
     x = x + 3
     y = y + 3 
   }
+  ## Naming each sample as they were 
   RMTtotal <- cbind(samplelabels, RMT)
   RPAtotal <- cbind(samplelabels, RPA)
+  ## Output into CSV format 
   write.csv(RMTtotal, file = paste(outputname, "RMT.csv"))
   write.csv(RPAtotal, file = paste(outputname, "RPA.csv"))
 }
@@ -92,6 +60,9 @@ relativematrix <- function(inputmatrix, outputname) {
 
 
 # Implementation of the function relativematrix() in my IBD data 
+relativematrix(pos1_10, "IBDQCtest")
+
+# Apply this to other files; but first introduce them into R environment 
 pos11_18 <- read.csv("IBD_extracted_11-18_pos.csv")
 pos19_23 <- read.csv("IBD_extracted_19-23_pos.csv")
 pos24_26 <- read.csv("IBD_extracted_24-26_pos.csv")
@@ -100,7 +71,7 @@ neg1_10 <- read.csv("IBD_extracted_1-10_neg.csv")
 neg11_17 <- read.csv("IBD_extracted_11-17_neg.csv")
 neg18_23 <- read.csv("IBD_extracted_18-23_neg.csv")
 neg24_32 <- read.csv("IBD_extracted_24-32_neg.csv")
-relativematrix(pos1_10, "IBDpos1-10")
+# Use the relativematrix function
 relativematrix(pos11_18, "IBDpos11-18")
 relativematrix(pos19_23, "IBDpos19-23")
 relativematrix(pos24_26, "IBDpos24-26")
