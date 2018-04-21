@@ -4,7 +4,7 @@
 ### Authur: Mai Yamamoto 
 
 ## This file include codes for 
-# --- generating RMT and RPA matrices: relativematrix() ------line 
+# --- generating RMT and RPA matrices plus %CV matrix: relativematrix() 
 # --- merge replicates to generate one row per sample: merge_norm()
 ##
 ##
@@ -13,11 +13,12 @@
 ##
 ##
 
-## call the required library for percent()
-library('scales')
-
+## Check where you are now
 getwd()
+
+# Direct yourself to where files are located
 setwd("your/home/directory")
+
 # list.files() shows you what you have in the specified directory 
 list.files()
 
@@ -105,11 +106,11 @@ duplmerge <- function(RPAtotal, replicate_tolerance, outputname){
   ordered <- RPAtotal[with(RPAtotal, order(sample)), ]
   
   # Remove QC and blank data 
-  samples <- ordered[!grepl("QC|blank|F-Phe|Blank", ordered[, 'sample']),]
+  samples <- ordered[!grepl("QC|blank|F-Phe|Blank|f-phe", ordered[, 'sample']),]
   
   # Take the average of replicates based on the sample name; 
-  ## --- take available one if one of the value is NA
-  ## --- replace the value with NA if %difference from average is > replicate_tolerance
+  qcs <- subset(ordered, sample == 'QC')
+  qcs <- qcs[, -c(1:2)]
   
   # subset the matrix
   RPAlabels <- samples[, 1:2]
@@ -124,6 +125,7 @@ duplmerge <- function(RPAtotal, replicate_tolerance, outputname){
   colnames(replmean) <- colnames(RPAsamples)
   
   i = 1
+  d <<- 0
   for (i in 1:cmpds) {
     x = 1
     y = 2
@@ -136,7 +138,8 @@ duplmerge <- function(RPAtotal, replicate_tolerance, outputname){
       } else if (is.na(replicate1) || is.na(replicate2)) { #if one of them is integrated, it stands
         replmean[z, i] <- mean(c(replicate1, replicate2), na.rm = TRUE)
       } else if (abs(((mean(c(replicate1, replicate2)) - replicate1) / mean(c(replicate1, replicate2)))) > replicate_tolerance*0.01) {
-        replmean[z, i] <- "NA" #if %diff > tolerance (eg. 30%), assign NA
+        replmean[z, i] <- "NaN" #if %diff > tolerance (eg. 30%), assign NA
+        d <<- d + 1  ## d corresponds to the number of occurance where peak sizes are very different 
       } else {
         replmean[z, i] <- mean(c(replicate1, replicate2)) #If peaks look pretty much the same, take the mean
       }
@@ -148,31 +151,35 @@ duplmerge <- function(RPAtotal, replicate_tolerance, outputname){
     i = i + 1
   }
   meansample <<- replmean
+  combined <<- rbind(replmean, qcs)
   # ### Final matrix of normalized values for each sample and columns for low volume and dilution observation
   write.csv(replmean, file = paste(outputname,".csv"))
+  write.csv(combined, file = paste(outputname,"wQC.csv"))
 }
 
 ## END of FUNCTION ####
 
 ###***************** FUNCTION************************
 # Function to remove compounds that appears in ~ 75% of samples or less 
-rmrare <- function(inputmatrix, na_perlimit, metabolite_num, outputname){
+rmrare <- function(inputmatrix, na_perlimit, metab_start, metabolite_num){
   n = 1
   highna <- NULL
   naperlist <- NULL
   rowlength <- length(rownames(inputmatrix))
-  metabmatrix <- inputmatrix[, 2:(metabolite_num+1)]
+  metabmatrix <- inputmatrix[, metab_start:(metabolite_num+1)]
   for (i in colnames(metabmatrix)){
-    napercentage <- (sum(is.na(inputmatrix$i))/rowlength)*100
+    napercentage <- (sum(is.na(inputmatrix[[i]]))/rowlength)*100
     if (napercentage > na_perlimit){
       highna <<- append(highna, i)
       naperlist <<- append(naperlist, napercentage)
       n <- n + 1 
+      assign('highna', highna, envir = .GlobalEnv)
     }
-  }
+  } 
+  return(highna)
   #finalmatrix <<- inputmatrix[, -which(names(inputmatrix) %in% c(highna))]
   #removed <<- data.frame(inputmatrix[, which(names(inputmatrix) %in% c(highna))], row.names = inputmatrix[, 'sample'])
-  #removedmat <<- rbind(removed, naperlist)
+  #removedmat <<- rbind(removed, round(naperlist, digits = 2))
   #rownames(removedmat)[rowlength+1] <- 'NApercentage'
   #write.csv(removedmat, file = paste0(outputname, "_highNA.csv"))
 }
