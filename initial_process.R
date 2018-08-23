@@ -30,6 +30,7 @@ summary(rawdata)
 head(rawdata)
 class(rawdata)
 
+##################### START  OF FUNCTION ################################
 ### Support function ######################
 # %CV calculator 
 cvcalc <- function(input_matrix){
@@ -138,7 +139,7 @@ duplmerge <- function(RPAtotal, replicate_tolerance, outputname){
       } else if (is.na(replicate1) || is.na(replicate2)) { #if one of them is integrated, it stands
         replmean[z, i] <- mean(c(replicate1, replicate2), na.rm = TRUE)
       } else if (abs(((mean(c(replicate1, replicate2)) - replicate1) / mean(c(replicate1, replicate2)))) > replicate_tolerance*0.01) {
-        replmean[z, i] <- "NaN" #if %diff > tolerance (eg. 30%), assign NA
+        replmean[z, i] <- "NaN" #if %diff > tolerance (eg. 30%), assign NaN
         d <<- d + 1  ## d corresponds to the number of occurance where peak sizes are very different 
       } else {
         replmean[z, i] <- mean(c(replicate1, replicate2)) #If peaks look pretty much the same, take the mean
@@ -158,29 +159,3 @@ duplmerge <- function(RPAtotal, replicate_tolerance, outputname){
 }
 
 ## END of FUNCTION ####
-
-###***************** FUNCTION************************
-# Function to remove compounds that appears in ~ 75% of samples or less 
-rmrare <- function(inputmatrix, na_perlimit, metab_start, metabolite_num){
-  n = 1
-  highna <- NULL
-  naperlist <- NULL
-  rowlength <- length(rownames(inputmatrix))
-  metabmatrix <- inputmatrix[, metab_start:(metabolite_num+1)]
-  for (i in colnames(metabmatrix)){
-    napercentage <- (sum(is.na(inputmatrix[[i]]))/rowlength)*100
-    if (napercentage > na_perlimit){
-      highna <<- append(highna, i)
-      naperlist <<- append(naperlist, napercentage)
-      n <- n + 1 
-      assign('highna', highna, envir = .GlobalEnv)
-    }
-  } 
-  return(highna)
-  #finalmatrix <<- inputmatrix[, -which(names(inputmatrix) %in% c(highna))]
-  #removed <<- data.frame(inputmatrix[, which(names(inputmatrix) %in% c(highna))], row.names = inputmatrix[, 'sample'])
-  #removedmat <<- rbind(removed, round(naperlist, digits = 2))
-  #rownames(removedmat)[rowlength+1] <- 'NApercentage'
-  #write.csv(removedmat, file = paste0(outputname, "_highNA.csv"))
-}
-
