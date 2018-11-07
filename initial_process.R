@@ -4,14 +4,14 @@
 ### Authur: Mai Yamamoto 
 
 ## This file include codes for 
+# --- calculation of %CV for each compound (integrated in function relativematrix()): cvcalc()
 # --- generating RMT and RPA matrices plus %CV matrix: relativematrix() 
-# --- merge replicates to generate one row per sample: merge_norm()
+# --- removing irreproducible compounds based on %CV calculated using cvcalc(): irrep_rm()
+# --- merge replicates to generate a matrix of one row per sample and a matrix with QCs: merge_norm()
 ##
 ##
 ##
-##
-##
-##
+
 
 ## Check where you are now
 getwd()
